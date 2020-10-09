@@ -21,6 +21,6 @@ def draw_constellation(df, const_name):
         x_values = [star_from_coord[0], star_to_coord[0]]
         y_values = [star_from_coord[1], star_to_coord[1]]
         plt.plot(x_values, y_values, transform=ccrs.Geodetic(), 
-                color='cyan', lw=3, alpha=.2, clip_on=True)
+                color='cyan', lw=3, alpha=.4, clip_on=True)
 
 
