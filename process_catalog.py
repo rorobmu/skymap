@@ -14,7 +14,7 @@ def process_star_catalog(constellations):
 
 
 def get_df_visible_stars(df_full):
-    df_visible_stars = df_full[df_full['mag']<=5]
+    df_visible_stars = df_full[df_full['mag']<=4.5]
     df_visible_stars = df_visible_stars[df_visible_stars['dec']>=-40]
     return df_visible_stars
 

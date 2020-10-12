@@ -5,15 +5,8 @@ import matplotlib.pyplot as plt
 import process_catalog
 import constellation
 import tools
-"""
-from astropy.time import Time
-from astropy.coordinates import solar_system_ephemeris, EarthLocation
-from astropy.coordinates import get_body_barycentric, get_body, get_moon
-t = Time("2020-10-09 15:39", scale="utc")
-loc = EarthLocation.from_geodetic(lat=45.73, lon=4.9181) 
-solar_system_ephemeris.set('de432s')
-mars = get_body('mars', t, loc) 
-   """ 
+
+
 
 #TODO
 #test ephemride (ex:mars, messier)
@@ -26,16 +19,16 @@ ra_max= 24
 dec_min = -40
 dec_max= 90
 
-central_longitude_ra=11
+central_longitude_ra=1
 central_latitude_dec=90
-noBound = False
+noBound = True
 drawBoundLimit = False
 showCoord = True
 
-ra_down_left=13.5
-dec_down_left=-15
-ra_up_right=7
-dec_up_right=60
+ra_down_left=2.5
+dec_down_left=-10
+ra_up_right=23.5
+dec_up_right=20
 
 
 if(processCatalog):
@@ -54,8 +47,36 @@ constellation.draw_constellation(df_star_full,constellations_to_draw)
 tools.drawStars(ax,df_star)
 tools.drawRADecLines(ax)
 
+
+
+#tools.drawEphemerides(ax=ax, obj_id='499', start='2020-07-01', stop='2021-02-01', step='7d', color='#F26A46')
+
+
+"""
+tools.drawDeepSkyObject(ax,'M65')
+tools.drawDeepSkyObject(ax,'M66')
+tools.drawDeepSkyObject(ax,'M63')
+tools.drawDeepSkyObject(ax,'M51')
+tools.drawDeepSkyObject(ax,'M94')
+tools.drawDeepSkyObject(ax,'M64')
+tools.drawDeepSkyObject(ax,'M53')
+tools.drawDeepSkyObject(ax,'M59')
+tools.drawDeepSkyObject(ax,'M60')
+tools.drawDeepSkyObject(ax,'M95')
+tools.drawDeepSkyObject(ax,'M91')
+tools.drawDeepSkyObject(ax,'M105')
+tools.drawDeepSkyObject(ax,'M81')
+tools.drawDeepSkyObject(ax,'M82')
+tools.drawDeepSkyObject(ax,'M108')
+tools.drawDeepSkyObject(ax,'M109')
+"""
 tools.cropAndRevserseImage(ax)
 
-plt.show()
-#plt.savefig('test.png', format='png', dpi=150)
 
+plt.savefig('mars_retrogradation2.png', format='png', dpi=300, pad_inches=0)
+plt.show()
+
+
+
+
+    
