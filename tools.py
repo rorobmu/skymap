@@ -1,11 +1,13 @@
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.legend_handler import HandlerLine2D, HandlerTuple
 import numpy as np
 from astroquery.jplhorizons import Horizons
 import datetime
 from astropy.coordinates import SkyCoord
 
-def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec_max,showC):
+def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec_max,showC, title):
     # init ra/dec
     global min_ra
     global max_ra
@@ -16,7 +18,8 @@ def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec
     global dec_step
     global dec_line
     global showCoord
-    
+    global background_color
+    global deepSky_dict
     showCoord=showC
     
     min_ra = ra_min
@@ -39,54 +42,34 @@ def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec
     ax.background_patch.set_facecolor(background_color)
     ax.patch.set_edgecolor(background_color)
     ax.outline_patch.set_edgecolor('white')
-    plt.title('Carte du ciel - hémisphère nord', fontsize=25, fontweight='medium', color='white', va='top')
-    
+    if(title!=''):
+        plt.title(title, fontsize=25, fontweight='medium', color='white', va='top')
 
+    deepSky_dict = {
+        "galaxie": ['$\u25A3$',0],
+        "amas globulaire":  ['$\u2042$',1],#u25A3
+        "nébuleuse": ['$\u25B2$',1],
+        }
 
     return ax
 
-def initBound(ax, ra_up_right, dec_up_right, ra_down_left, dec_down_left, isNoBound,drawBoundLimit):
-    global corner_lim_up_right_x
-    global corner_lim_up_right_y
-    global corner_lim_down_left_x
-    global corner_lim_down_left_y
+def initBound(ax, isNoBound,drawBoundLimit):
     global noBound
     
     noBound=isNoBound
-    debug = False
     
-    corner_lim_up_right_x, corner_lim_up_right_y =  ax.projection.transform_point(ra_up_right*360/24, dec_up_right,src_crs=ccrs.Geodetic())
-    corner_lim_down_left_x,  corner_lim_down_left_y = ax.projection.transform_point(ra_down_left*360/24, dec_down_left,src_crs=ccrs.Geodetic())
-    
-    #debug : scatter limit point 
-    if(debug):
-        ax.scatter(corner_lim_up_right_x,corner_lim_up_right_y, color='green', lw=10, alpha=1, clip_on=True)
-        ax.scatter(corner_lim_down_left_x,corner_lim_down_left_y, color='red', lw=10, alpha=1, clip_on=True)
     if(drawBoundLimit):
         #draw square for bound
-        x_values  = [corner_lim_down_left_x, corner_lim_down_left_x]
-        y_values  = [corner_lim_down_left_y, corner_lim_up_right_y]
-        ax.plot(x_values, y_values,color='red', lw=2, alpha=1, clip_on=True )
-        
-        x_values  = [corner_lim_up_right_x, corner_lim_up_right_x]
-        y_values  = [corner_lim_down_left_y, corner_lim_up_right_y]
-        ax.plot(x_values, y_values,color='red', lw=2, alpha=1, clip_on=True )
-        
-        x_values  = [corner_lim_down_left_x, corner_lim_up_right_x]
-        y_values  = [corner_lim_down_left_y, corner_lim_down_left_y]
-        ax.plot(x_values, y_values,color='red', lw=2, alpha=1, clip_on=True )
-        
-        x_values  = [corner_lim_down_left_x, corner_lim_up_right_x]
-        y_values  = [corner_lim_up_right_y, corner_lim_up_right_y]
-        ax.plot(x_values, y_values,color='red', lw=2, alpha=1, clip_on=True )
-
+        ax.plot([point_downleft[0], point_upleft[0]], [point_downleft[1], point_upleft[1]], color='red', lw=8, clip_on=True)
+        ax.plot([point_upleft[0], point_upright[0]], [point_upleft[1], point_upright[1]], color='red', lw=8, clip_on=True)
+        ax.plot([point_upright[0], point_downright[0]], [point_upright[1], point_downright[1]], color='red', lw=8, clip_on=True)
+        ax.plot([point_downright[0], point_downleft[0]], [point_downright[1], point_downleft[1]], color='red', lw=8, clip_on=True)
 
 def isInBound(x, y):
     if(noBound):
         return True
     #the figure is not reversed on x yet, so we must invert the test for x
-    if(x>corner_lim_up_right_x and x<corner_lim_down_left_x 
-           and y<corner_lim_up_right_y and y>corner_lim_down_left_y):
+    if(x>point_downleft[0] and x<point_upright[0] and y>point_downleft[1] and y<point_upright[1]):
         return True
     return False
 
@@ -97,36 +80,32 @@ def cropAndRevserseImage(ax):
         ax.set_xlim(ax.get_xlim()[::-1])
         ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1])
     else:
-        ax.set_xlim(corner_lim_down_left_x, corner_lim_up_right_x)
-        ax.set_ylim(corner_lim_down_left_y, corner_lim_up_right_y)
+        ax.set_xlim(point_upright[0],point_downleft[0])
+        ax.set_ylim(point_downleft[1], point_upright[1])
     
         
         
-def drawRADecLines(ax):
+def drawRADecLines(ax,central_ra):
     # draw declinaison lines
     for dec in dec_step: 
         ra_delim = []
-        ra_text = ra_line[0]
+        ra_delim_coord = []
         for delim in ra_line : 
             at_x, at_y = ax.projection.transform_point(delim, dec,src_crs=ccrs.Geodetic())
             if(isInBound(at_x, at_y)):
                 ra_delim.append(delim)
-                
-                if(delim > ra_text and delim - ra_text < 1):
-                    ra_text = delim
+                ra_delim_coord.append((at_x, at_y))
         
-        
-        #if(len(ra_delim)>0):
         ax.plot(ra_line, [dec]*len(ra_line), transform=ccrs.Geodetic(),color='cyan', lw=1, alpha=.2, clip_on=True)
 
         if(showCoord):
             if(noBound==False and len(ra_delim)>0):
-                ra_text=max(ra_delim)
-                text_x, text_y = ax.projection.transform_point(ra_text+0.1, dec,src_crs=ccrs.Geodetic())
-                if(text_y < corner_lim_up_right_y):
-                    ax.text(corner_lim_down_left_x - 10000, text_y,str(dec) + '°', ha='left', va='center', fontsize=30,color='white')
+                #text_x, text_y = ax.projection.transform_point(min(ra_delim)+0.1, dec,src_crs=ccrs.Geodetic())
+                text_x, text_y = max(ra_delim_coord)
+                if(text_y < point_upright[1] and text_y > point_downleft[1] and text_x > point_upright[0]- 10000):
+                    ax.text(text_x, text_y,str(dec) + '°', ha='left', va='center', fontsize=30,color='white')
             elif(noBound==True):
-                text_x, text_y = ax.projection.transform_point(5*360/24.0, dec,src_crs=ccrs.Geodetic())
+                text_x, text_y = ax.projection.transform_point(central_ra*360/24.0, dec,src_crs=ccrs.Geodetic())
                 ax.text(text_x, text_y,str(dec) + '°', ha='left', va='center', fontsize=15,color='white')
                 
     # draw ra lines    
@@ -143,8 +122,8 @@ def drawRADecLines(ax):
         if(showCoord):
             if(noBound==False and len(dec_delim)>0):
                 text_x, text_y = ax.projection.transform_point(ra, min(dec_delim)-0.1,src_crs=ccrs.Geodetic())
-                if(text_x < corner_lim_down_left_x and text_x > corner_lim_up_right_x and int(ra/360*24)<24):
-                    ax.text(text_x, corner_lim_down_left_y,str(int(ra/360*24)) + 'h', ha='center', va='bottom', fontsize=30,color='white')
+                if(text_x > point_downleft[0] and text_x < point_upright[0] and text_y < point_downleft[0] + 10000 and int(ra/360*24)<24):
+                    ax.text(text_x, text_y,str(int(ra/360*24)) + 'h', ha='center', va='bottom', fontsize=30,color='white')
             elif(noBound==True and int(ra/360*24)<24):
                 text_x, text_y = ax.projection.transform_point(ra, min_dec-1,src_crs=ccrs.Geodetic())
                 ax.text(text_x, text_y,str(int(ra/360*24)) + 'h', ha='center', va='center', fontsize=15,color='white')
@@ -179,10 +158,87 @@ def drawEphemerides(ax, obj_id, start, stop, step, color):
             formatted_date = datetime.datetime.strptime(eph[i]['datetime_str'], '%Y-%b-%d %H:%M').strftime('%d/%m')
             ax.text(x,y-40000,formatted_date, ha='center', va='top', fontsize=20,color='white',zorder=16)
             
-def drawDeepSkyObject(ax, obj_name):
+def drawDeepSkyObject(ax, obj_name, object_type):
 
     target = SkyCoord.from_name(obj_name)  
     x, y = ax.projection.transform_point(target.ra.deg, target.dec.deg,src_crs=ccrs.Geodetic())
-    ax.text(x,y,obj_name, ha='center', va='center', fontsize=10,color='white',zorder=16, fontweight='bold')
-    circle = plt.Circle((x, y), 150000, fill=False, color='white', linewidth=1, zorder=20)
+    
+    ax.scatter(x,y, marker=deepSky_dict[object_type][0], color='white',zorder=16, s=400)
+    ax.text(x,y-100000,obj_name, ha='center', va='center', fontsize=18,color='white',zorder=16, fontweight='normal')
+
+    deepSky_dict[object_type][1]=1
+    
+    #circle = plt.Circle((x, y), 150000, fill=False, color='white', linewidth=1, zorder=20)
+    #ax.add_artist(circle)
+
+def getCoordDeepSkyObject(obj_name):
+    target = SkyCoord.from_name(obj_name)  
+    return target.ra.deg, target.dec.deg
+
+def computeFigureDeg(ax, central_longitude_ra):
+    global figureDecPixel
+    x, y = ax.projection.transform_point(central_longitude_ra*360/24, 90,src_crs=ccrs.Geodetic())
+    x2, y2 = ax.projection.transform_point(central_longitude_ra*360/24, 89,src_crs=ccrs.Geodetic())
+
+    figureDecPixel = y-y2
+    
+def computeEdges(ax, fieldViewWidth, fieldViewHeigth, central_ra, central_dec):
+    #central point of view
+    x, y = ax.projection.transform_point(central_ra*360/24, central_dec,src_crs=ccrs.Geodetic())
+    
+    global point_downleft
+    global point_upleft
+    global point_upright
+    global point_downright
+    
+    point_downleft = [x-((fieldViewWidth/2.0)*figureDecPixel), y-((fieldViewHeigth/2.0)*figureDecPixel)]
+    point_upleft = [x-((fieldViewWidth/2.0)*figureDecPixel), y+((fieldViewHeigth/2.0)*figureDecPixel)]
+    point_upright = [x+((fieldViewWidth/2.0)*figureDecPixel), y+((fieldViewHeigth/2.0)*figureDecPixel)]
+    point_downright = [x+((fieldViewWidth/2.0)*figureDecPixel), y-((fieldViewHeigth/2.0)*figureDecPixel)]
+
+def drawTelrad(ax, ra, dec):
+    x, y = ax.projection.transform_point(ra, dec,src_crs=ccrs.Geodetic())
+    circle = plt.Circle((x, y), 0.25*figureDecPixel, fill=False, color='red', linewidth=1, zorder=20)
     ax.add_artist(circle)
+    circle = plt.Circle((x, y), 1*figureDecPixel, fill=False, color='red', linewidth=1, zorder=20)
+    ax.add_artist(circle)
+    circle = plt.Circle((x, y), 2*figureDecPixel, fill=False, color='red', linewidth=1, zorder=20)
+    ax.add_artist(circle)
+    
+def drawPOIRect(ax, ra, dec, width, height):
+    
+    x, y = ax.projection.transform_point(ra*360/24, dec,src_crs=ccrs.Geodetic())
+    
+    point_downleft = [x-((width/2.0)*figureDecPixel), y-((height/2.0)*figureDecPixel)]
+    point_upleft = [x-((width/2.0)*figureDecPixel), y+((height/2.0)*figureDecPixel)]
+    point_upright = [x+((width/2.0)*figureDecPixel), y+((height/2.0)*figureDecPixel)]
+    point_downright = [x+((width/2.0)*figureDecPixel), y-((height/2.0)*figureDecPixel)]
+    
+    ax.plot([point_downleft[0], point_upleft[0]], [point_downleft[1], point_upleft[1]], color='red', lw=2, clip_on=True)
+    ax.plot([point_upleft[0], point_upright[0]], [point_upleft[1], point_upright[1]], color='red', lw=2, clip_on=True)
+    ax.plot([point_upright[0], point_downright[0]], [point_upright[1], point_downright[1]], color='red', lw=2, clip_on=True)
+    ax.plot([point_downright[0], point_downleft[0]], [point_downright[1], point_downleft[1]], color='red', lw=2, clip_on=True)
+
+def drawLegend(ax):
+    legend_elements = []
+    for obj in deepSky_dict:
+        if(deepSky_dict[obj][1]==1):
+            legend_elements.append(Line2D([], [], marker=deepSky_dict[obj][0], color=background_color, label=obj,
+                          markerfacecolor='w', markersize=25))
+
+    l= plt.legend(handles=legend_elements, numpoints=1,loc='lower left', fontsize='30', facecolor=background_color,
+               handler_map={tuple: HandlerTuple(ndivide=None)}, framealpha=1)
+    for text in l.get_texts():
+        text.set_color('w')
+        
+    """legend multiple
+    p1, = plt.plot([1, 2.5, 3], 'k-d',markersize=15,markerfacecolor='w', color=background_color)
+    p2, = plt.plot([3, 2, 1], marker='$\u2638$', markersize=25,markerfacecolor='w', color=background_color)
+    #226D2
+    l= plt.legend([(p1, p2)], ['Galaxie'], numpoints=1,loc='lower left', fontsize='30', facecolor=background_color,
+               handler_map={tuple: HandlerTuple(ndivide=None)})
+    """
+
+    
+ 
+        
