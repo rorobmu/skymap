@@ -1,3 +1,26 @@
+Generate custom sky map sky map 
+
+Steps to follow to produce a map - in file skymap.py, adjust the following parameters : 
+ * central_ra : right ascencion in hours where the map is centered.
+ * noBound (True/False) : if True, the all sky map is drawn and, otherwise, the 3 others parameters below are used
+ * central_dec : declinaison in degree where the map is centered
+ * fieldViewWidth : field view width of the map in degree
+ * fieldViewHeight : field view height of the map in degree
+ * drawBoundLimit : display bound limit in red. Useful if noBound=True and want to check what will be the bound when noBound will be False
+ * showCoord(True/False) : display ra and dec on the map
+ * processCatalog (True/False) : reprocess the csv star catalog 
+ * mapTitle : title to display 
+ * fileName : PNG filename generated
+ * maxMagnitude : max magnitude stars to display
+
+Set the parameters as wanted and run skymap.py. Ii will dra the skymap with stars and constellations.
+Then check commented examples in the file to draw deep sky object, ephemerides, etc. 
+Usually, do a first run with noBound=True to check where the objects are, then adjust central_ra, central_dec, fieldView, set noBound to False and rerun the code. 
+
+To have a map in a different region than nothern hemisphere, adjust parameters constellations_to_draw, ra_min, ra_max, dec_min, dec_max to choose constellations to display and max ra/dec of the all map
+
+Star catalog details below : 
+
 V/50           Bright Star Catalogue, 5th Revised Ed.     (Hoffleit+, 1991)
 ================================================================================
 The Bright Star Catalogue,  5th Revised Ed. (Preliminary Version)
