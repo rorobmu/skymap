@@ -1,4 +1,4 @@
-Generate custom sky map sky map 
+Generate custom sky map 
 
 Steps to follow to produce a map - in file skymap.py, adjust the following parameters : 
  * central_ra : right ascencion in hours where the map is centered.
