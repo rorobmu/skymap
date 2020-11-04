@@ -21,6 +21,20 @@ def draw_constellation(df, const_name):
         x_values = [star_from_coord[0], star_to_coord[0]]
         y_values = [star_from_coord[1], star_to_coord[1]]
         plt.plot(x_values, y_values, transform=ccrs.Geodetic(), 
-                color='cyan', lw=3, alpha=.4, clip_on=True)
+                color='cyan', lw=1.2, alpha=.4, clip_on=True)
+
+
+def draw_asterism(df, hip_list):
+
+
+    for i in range(0,len(hip_list)-1,1):
+        star_from = df[df['hip']==hip_list[i]]
+        star_to = df[df['hip']==hip_list[i+1]]
+        star_from_coord = [float(star_from['ra'])*360/24.0,float(star_from['dec'])]
+        star_to_coord = [float(star_to['ra'])*360/24.0,float(star_to['dec'])]
+        x_values = [star_from_coord[0], star_to_coord[0]]
+        y_values = [star_from_coord[1], star_to_coord[1]]
+        plt.plot(x_values, y_values, transform=ccrs.Geodetic(), 
+                color='yellow', lw=1.2, alpha=.4, clip_on=True)
 
 

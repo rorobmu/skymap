@@ -7,7 +7,7 @@ from astroquery.jplhorizons import Horizons
 import datetime
 from astropy.coordinates import SkyCoord
 
-def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec_max,showC, title):
+def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec_max,showC, title, maxMagnitude):
     # init ra/dec
     global min_ra
     global max_ra
@@ -20,6 +20,9 @@ def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec
     global showCoord
     global background_color
     global deepSky_dict
+    global maxMag
+    
+    maxMag=maxMagnitude
     showCoord=showC
     
     min_ra = ra_min
@@ -46,9 +49,9 @@ def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec
         plt.title(title, fontsize=25, fontweight='medium', color='white', va='top')
 
     deepSky_dict = {
-        "galaxie": ['$\u25A3$',0],
-        "amas globulaire":  ['$\u2042$',1],#u25A3
-        "nébuleuse": ['$\u25B2$',1],
+        "galaxie": ['$\u2585$',0],
+        "amas globulaire":  ['$\u2042$',0],#u25A3
+        "nébuleuse": ['$\u25B2$',0],
         }
 
     return ax
@@ -102,7 +105,7 @@ def drawRADecLines(ax,central_ra):
             if(noBound==False and len(ra_delim)>0):
                 #text_x, text_y = ax.projection.transform_point(min(ra_delim)+0.1, dec,src_crs=ccrs.Geodetic())
                 text_x, text_y = max(ra_delim_coord)
-                if(text_y < point_upright[1] and text_y > point_downleft[1] and text_x > point_upright[0]- 10000):
+                if(text_y < point_upright[1] and text_y > point_downleft[1] and text_x > point_upright[0]- 20000):
                     ax.text(text_x, text_y,str(dec) + '°', ha='left', va='center', fontsize=30,color='white')
             elif(noBound==True):
                 text_x, text_y = ax.projection.transform_point(central_ra*360/24.0, dec,src_crs=ccrs.Geodetic())
@@ -132,44 +135,7 @@ def drawRADecLines(ax,central_ra):
     #ax.gridlines(color='red', ylocs=np.arange(-50, 91, 10), xlocs=np.arange(0*360/24.0, 24*360/24.0, 1*360/24), draw_labels=True)  
     #ax.tissot(facecolor='green', alpha=.8, lats=np.arange(-40, 81, 10), lons=np.arange(0*360/24.0, 24*360/24.0, 1*360/24))    
 
-def drawStars(ax, df_star):
-    #draw stars
-    for index, row in df_star.iterrows():
-        star_x, star_y = ax.projection.transform_point(row['ra']*360/24, row['dec'],src_crs=ccrs.Geodetic())
-        if(isInBound( star_x, star_y)):
-            ax.scatter(star_x,star_y,s=(6.5-row['mag'])*5, color='white', lw=0, edgecolor='none', zorder=10)    
-        #ax.text(row['RA']*360/24, row['Dec'],row['Name'], ha='left', va='center', 
-        #            transform=ccrs.Geodetic(), fontsize=10,color='white')
 
-
-def drawEphemerides(ax, obj_id, start, stop, step, color):
-    #Bron
-    loc = {'lon': 4.920591,
-       'lat': 45.732450,
-       'elevation': 0.2}
-
-    obj = Horizons(id=obj_id, id_type='majorbody',location=loc, epochs={'start':start, 'stop':stop,'step':step})
-    eph = obj.ephemerides()
-    
-    for i in range(0,len(eph)):
-        x, y = ax.projection.transform_point(eph[i]['RA'], eph[i]['DEC'],src_crs=ccrs.Geodetic())
-        ax.scatter(x,y,s=110, color=color, lw=0, edgecolor='none', zorder=15)
-        if(i%5 == 0 or i == 0):
-            formatted_date = datetime.datetime.strptime(eph[i]['datetime_str'], '%Y-%b-%d %H:%M').strftime('%d/%m')
-            ax.text(x,y-40000,formatted_date, ha='center', va='top', fontsize=20,color='white',zorder=16)
-            
-def drawDeepSkyObject(ax, obj_name, object_type):
-
-    target = SkyCoord.from_name(obj_name)  
-    x, y = ax.projection.transform_point(target.ra.deg, target.dec.deg,src_crs=ccrs.Geodetic())
-    
-    ax.scatter(x,y, marker=deepSky_dict[object_type][0], color='white',zorder=16, s=400)
-    ax.text(x,y-100000,obj_name, ha='center', va='center', fontsize=18,color='white',zorder=16, fontweight='normal')
-
-    deepSky_dict[object_type][1]=1
-    
-    #circle = plt.Circle((x, y), 150000, fill=False, color='white', linewidth=1, zorder=20)
-    #ax.add_artist(circle)
 
 def getCoordDeepSkyObject(obj_name):
     target = SkyCoord.from_name(obj_name)  
@@ -195,6 +161,15 @@ def computeEdges(ax, fieldViewWidth, fieldViewHeigth, central_ra, central_dec):
     point_upleft = [x-((fieldViewWidth/2.0)*figureDecPixel), y+((fieldViewHeigth/2.0)*figureDecPixel)]
     point_upright = [x+((fieldViewWidth/2.0)*figureDecPixel), y+((fieldViewHeigth/2.0)*figureDecPixel)]
     point_downright = [x+((fieldViewWidth/2.0)*figureDecPixel), y-((fieldViewHeigth/2.0)*figureDecPixel)]
+    
+def drawStars(ax, df_star):
+    #draw stars
+    sizeFactor=8
+    for index, row in df_star.iterrows():
+        star_x, star_y = ax.projection.transform_point(row['ra']*360/24, row['dec'],src_crs=ccrs.Geodetic())
+        if(isInBound( star_x, star_y)):
+            ax.scatter(star_x,star_y,s=(maxMag-row['mag'])*sizeFactor, color='white', lw=0, edgecolor='none', zorder=10)    
+            #ax.text(star_x,star_y, row['hip'], ha='left', va='center', fontsize=10,color='white')
 
 def drawTelrad(ax, ra, dec):
     x, y = ax.projection.transform_point(ra, dec,src_crs=ccrs.Geodetic())
@@ -226,7 +201,7 @@ def drawLegend(ax):
             legend_elements.append(Line2D([], [], marker=deepSky_dict[obj][0], color=background_color, label=obj,
                           markerfacecolor='w', markersize=25))
 
-    l= plt.legend(handles=legend_elements, numpoints=1,loc='lower left', fontsize='30', facecolor=background_color,
+    l= plt.legend(handles=legend_elements, numpoints=1,loc='lower right', fontsize='20', facecolor=background_color,
                handler_map={tuple: HandlerTuple(ndivide=None)}, framealpha=1)
     for text in l.get_texts():
         text.set_color('w')
@@ -239,6 +214,36 @@ def drawLegend(ax):
                handler_map={tuple: HandlerTuple(ndivide=None)})
     """
 
+            
+def drawEphemerides(ax, obj_id, obj_type, start, stop, step, color, showDate, dateDisplayFreq, textPadding):
+    #Bron
+    loc = {'lon': 4.920591,
+       'lat': 45.732450,
+       'elevation': 0.2}
+
+    obj = Horizons(id=obj_id, id_type=obj_type,location=loc, epochs={'start':start, 'stop':stop,'step':step})
+    eph = obj.ephemerides()
     
- 
+    for i in range(0,len(eph)):
+        x_text, y_text = ax.projection.transform_point(eph[i]['RA']-textPadding[0], eph[i]['DEC']+textPadding[1],src_crs=ccrs.Geodetic())
+        x, y = ax.projection.transform_point(eph[i]['RA'], eph[i]['DEC'],src_crs=ccrs.Geodetic())
+        ax.scatter(x,y,s=50, color=color, lw=0, edgecolor='none', zorder=15, marker='$\u25C6$' )
+        if(showDate):
+            if(i%dateDisplayFreq == 0 or i == 0):
+                formatted_date = datetime.datetime.strptime(eph[i]['datetime_str'], '%Y-%b-%d %H:%M').strftime('%d/%m')
+                ax.text(x_text,y_text,formatted_date, ha='center', va='center', fontsize=15,color='white',zorder=16)
+            
+            
+def drawDeepSkyObject(ax, obj_name, object_type):
+
+    target = SkyCoord.from_name(obj_name)  
+    x, y = ax.projection.transform_point(target.ra.deg, target.dec.deg,src_crs=ccrs.Geodetic())
+    
+    ax.scatter(x,y, marker=deepSky_dict[object_type][0], color='white',zorder=16, s=250)
+    ax.text(x,y-200000,obj_name, ha='center', va='center', fontsize=18,color='white',zorder=16, fontweight='normal')
+
+    deepSky_dict[object_type][1]=1
+    
+    #circle = plt.Circle((x, y), 150000, fill=False, color='white', linewidth=1, zorder=20)
+    #ax.add_artist(circle)
         
