@@ -6,7 +6,7 @@ def process_star_catalog(constellations):
     df_hyg = pd.read_csv('hygdata_v3.csv', sep=',')
     #df_stars = df_hyg[df_hyg['bf'].str.contains(constellations, case=False, regex=True).fillna(False)]
     
-    df_stars = df_hyg[df_hyg['mag']<=10]
+    df_stars = df_hyg[df_hyg['mag']<=14]
     df_stars = df_stars[df_stars['dec']>=-55]
     #remove sun
     df_stars = df_stars[df_stars['proper']!='Sol']

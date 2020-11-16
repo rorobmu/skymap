@@ -15,30 +15,39 @@ dec_max= 90
 
 #central point of view and egde of field view
 noBound = False #if there is no bound, ignore other paramters for view below
-central_ra=12
+central_ra=0
 central_dec=40
-fieldViewWidth=50
-fieldViewHeight=45
+fieldViewWidth=40
+fieldViewHeight=40
 
 #other global parameters
 drawBoundLimit = False
 showCoord = True
 processCatalog = False
 mapTitle=''
-fileName = 'map'
-maxMagnitude = 6
+fileName = ''
+maxMagnitude = 4
+asterism_largeView = True
+drawAsterism = True
+step_ra=1
+step_dec=10
 # ---------------------------------------------------
 
 
 if(processCatalog):
     process_catalog.process_star_catalog(constellations_to_draw)
 
+if(drawAsterism):
+    central_ra, central_dec, maxMagnitude, fieldViewWidth, fieldViewHeight,step_ra, step_dec = asterism.init_asterism("HomePlate", asterism_largeView)
+
 # get stars in df, and reduced stars to draw visible stars
 df_star_full = pd.read_csv('stars.csv', sep=';')
 df_star = process_catalog.get_df_visible_stars(df_star_full, maxMagnitude)
 
+
+
 #init map
-ax = tools.initFigure(central_longitude=central_ra, central_latitude=90,ra_min=ra_min, ra_max=ra_max, dec_min=dec_min, dec_max=dec_max, showC=showCoord, title=mapTitle, maxMagnitude=maxMagnitude)
+ax = tools.initFigure(central_longitude=central_ra, central_latitude=90,ra_min=ra_min, ra_max=ra_max, dec_min=dec_min, dec_max=dec_max, showC=showCoord, title=mapTitle, maxMagnitude=maxMagnitude, step_ra=step_ra, step_dec=step_dec)
 tools.computeFigureDeg(ax, central_ra)
 tools.computeEdges(ax,fieldViewWidth=fieldViewWidth,fieldViewHeigth=fieldViewHeight, central_ra=central_ra, central_dec=central_dec)
 tools.initBound(ax=ax, isNoBound=noBound, drawBoundLimit=drawBoundLimit)
@@ -69,9 +78,12 @@ tools.drawRADecLines(ax, central_ra)
 #asterism.draw_asterism(df_star_full,[113852,113993,114186,114365,114104,113790,113498,113316,112998])
 #tools.drawPOIRect(ax,11,10,15,10)
 
+asterism.draw_HomePlate(ax, df_star_full, asterism_largeView)
+tools.drawDeepSkyObject(ax,'M31', 'nébuleuse')
+#tools.drawPOIRect(ax,20.93,43.56,1,1)
 #finalize figure and save it
 tools.cropAndRevserseImage(ax)
-plt.savefig(fileName + '.png', format='png', dpi=300, pad_inches=0)
+#plt.savefig(fileName + '.png', format='png', dpi=300, pad_inches=0)
 plt.show()
 
     

@@ -7,7 +7,7 @@ from astroquery.jplhorizons import Horizons
 import datetime
 from astropy.coordinates import SkyCoord
 
-def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec_max,showC, title, maxMagnitude):
+def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec_max,showC, title, maxMagnitude, step_ra, step_dec):
     # init ra/dec
     global min_ra
     global max_ra
@@ -30,9 +30,9 @@ def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec
     min_dec = dec_min
     max_dec = dec_max
     
-    ra_step = np.arange(min_ra*360/24.0, (max_ra*360/24.0)+1, 1*360/24)
+    ra_step = np.arange(min_ra*360/24.0, (max_ra*360/24.0)+1, step_ra*360/24)
     ra_line = np.arange(min_ra*360/24, max_ra*360/24.00, 0.1)
-    dec_step = np.arange(min_dec, max_dec + 1, 10)
+    dec_step = np.arange(min_dec, max_dec + 1, step_dec)
     dec_line = np.arange(min_dec, max_dec + 0.01, 0.1)
     
     #draw figures
@@ -126,7 +126,12 @@ def drawRADecLines(ax,central_ra):
             if(noBound==False and len(dec_delim)>0):
                 text_x, text_y = ax.projection.transform_point(ra, min(dec_delim)-0.1,src_crs=ccrs.Geodetic())
                 if(text_x > point_downleft[0] and text_x < point_upright[0] and text_y < point_downleft[0] + 10000 and int(ra/360*24)<24):
-                    ax.text(text_x, text_y,str(int(ra/360*24)) + 'h', ha='center', va='bottom', fontsize=30,color='white')
+                    ra_h = int(ra/360*24)
+                    ra_m = int(round(((ra/360*24) - ra_h)*60))
+                    label = str(ra_h) + 'h'
+                    if(ra_m)>0:
+                        label = label +  str(ra_m) + 'm'
+                    ax.text(text_x, text_y,label, ha='center', va='bottom', fontsize=30,color='white')
             elif(noBound==True and int(ra/360*24)<24):
                 text_x, text_y = ax.projection.transform_point(ra, min_dec-1,src_crs=ccrs.Geodetic())
                 ax.text(text_x, text_y,str(int(ra/360*24)) + 'h', ha='center', va='center', fontsize=15,color='white')
@@ -169,7 +174,7 @@ def drawStars(ax, df_star):
         star_x, star_y = ax.projection.transform_point(row['ra']*360/24, row['dec'],src_crs=ccrs.Geodetic())
         if(isInBound( star_x, star_y)):
             ax.scatter(star_x,star_y,s=(maxMag-row['mag'])*sizeFactor, color='white', lw=0, edgecolor='none', zorder=10)    
-            #ax.text(star_x,star_y, row['hip'], ha='left', va='center', fontsize=10,color='white')
+            #ax.text(star_x,star_y, int(row['hip']), ha='left', va='center', fontsize=15,color='white')
 
 def drawTelrad(ax, ra, dec):
     x, y = ax.projection.transform_point(ra, dec,src_crs=ccrs.Geodetic())
@@ -189,10 +194,10 @@ def drawPOIRect(ax, ra, dec, width, height):
     point_upright = [x+((width/2.0)*figureDecPixel), y+((height/2.0)*figureDecPixel)]
     point_downright = [x+((width/2.0)*figureDecPixel), y-((height/2.0)*figureDecPixel)]
     
-    ax.plot([point_downleft[0], point_upleft[0]], [point_downleft[1], point_upleft[1]], color='red', lw=2, clip_on=True)
-    ax.plot([point_upleft[0], point_upright[0]], [point_upleft[1], point_upright[1]], color='red', lw=2, clip_on=True)
-    ax.plot([point_upright[0], point_downright[0]], [point_upright[1], point_downright[1]], color='red', lw=2, clip_on=True)
-    ax.plot([point_downright[0], point_downleft[0]], [point_downright[1], point_downleft[1]], color='red', lw=2, clip_on=True)
+    ax.plot([point_downleft[0], point_upleft[0]], [point_downleft[1], point_upleft[1]], color='yellow', lw=2, clip_on=True)
+    ax.plot([point_upleft[0], point_upright[0]], [point_upleft[1], point_upright[1]], color='yellow', lw=2, clip_on=True)
+    ax.plot([point_upright[0], point_downright[0]], [point_upright[1], point_downright[1]], color='yellow', lw=2, clip_on=True)
+    ax.plot([point_downright[0], point_downleft[0]], [point_downright[1], point_downleft[1]], color='yellow', lw=2, clip_on=True)
 
 def drawLegend(ax):
     legend_elements = []
@@ -240,7 +245,7 @@ def drawDeepSkyObject(ax, obj_name, object_type):
     x, y = ax.projection.transform_point(target.ra.deg, target.dec.deg,src_crs=ccrs.Geodetic())
     
     ax.scatter(x,y, marker=deepSky_dict[object_type][0], color='white',zorder=16, s=250)
-    ax.text(x,y-200000,obj_name, ha='center', va='center', fontsize=18,color='white',zorder=16, fontweight='normal')
+    ax.text(x,y-100000,obj_name, ha='center', va='center', fontsize=18,color='white',zorder=16, fontweight='normal')
 
     deepSky_dict[object_type][1]=1
     
