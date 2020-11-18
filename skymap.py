@@ -15,10 +15,10 @@ dec_max= 90
 
 #central point of view and egde of field view
 noBound = False #if there is no bound, ignore other paramters for view below
-central_ra=0
-central_dec=40
-fieldViewWidth=40
-fieldViewHeight=40
+central_ra=20
+central_dec=38
+fieldViewWidth=7
+fieldViewHeight=7
 
 #other global parameters
 drawBoundLimit = False
@@ -26,7 +26,7 @@ showCoord = True
 processCatalog = False
 mapTitle=''
 fileName = ''
-maxMagnitude = 4
+maxMagnitude = 8.9
 asterism_largeView = True
 drawAsterism = True
 step_ra=1
@@ -38,7 +38,7 @@ if(processCatalog):
     process_catalog.process_star_catalog(constellations_to_draw)
 
 if(drawAsterism):
-    central_ra, central_dec, maxMagnitude, fieldViewWidth, fieldViewHeight,step_ra, step_dec = asterism.init_asterism("HomePlate", asterism_largeView)
+    central_ra, central_dec, maxMagnitude, fieldViewWidth, fieldViewHeight,step_ra, step_dec = asterism.init_asterism("Arc", asterism_largeView)
 
 # get stars in df, and reduced stars to draw visible stars
 df_star_full = pd.read_csv('stars.csv', sep=';')
@@ -78,8 +78,7 @@ tools.drawRADecLines(ax, central_ra)
 #asterism.draw_asterism(df_star_full,[113852,113993,114186,114365,114104,113790,113498,113316,112998])
 #tools.drawPOIRect(ax,11,10,15,10)
 
-asterism.draw_HomePlate(ax, df_star_full, asterism_largeView)
-tools.drawDeepSkyObject(ax,'M31', 'nébuleuse')
+asterism.draw_Arc(ax, df_star_full, asterism_largeView)
 #tools.drawPOIRect(ax,20.93,43.56,1,1)
 #finalize figure and save it
 tools.cropAndRevserseImage(ax)

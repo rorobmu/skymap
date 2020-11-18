@@ -6,6 +6,8 @@ import numpy as np
 from astroquery.jplhorizons import Horizons
 import datetime
 from astropy.coordinates import SkyCoord
+import math
+import pandas as pd
 
 def initFigure(central_longitude, central_latitude, ra_min, ra_max, dec_min, dec_max,showC, title, maxMagnitude, step_ra, step_dec):
     # init ra/dec
@@ -174,7 +176,8 @@ def drawStars(ax, df_star):
         star_x, star_y = ax.projection.transform_point(row['ra']*360/24, row['dec'],src_crs=ccrs.Geodetic())
         if(isInBound( star_x, star_y)):
             ax.scatter(star_x,star_y,s=(maxMag-row['mag'])*sizeFactor, color='white', lw=0, edgecolor='none', zorder=10)    
-            #ax.text(star_x,star_y, int(row['hip']), ha='left', va='center', fontsize=15,color='white')
+            #if(pd.isnull(row['hip']) == False):
+            #    ax.text(star_x,star_y, int(row['hip']), ha='left', va='center', fontsize=8,color='red')
 
 def drawTelrad(ax, ra, dec):
     x, y = ax.projection.transform_point(ra, dec,src_crs=ccrs.Geodetic())
